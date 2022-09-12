@@ -18,7 +18,7 @@ extern bool           delayed_tasks_run;
 #if defined(OLED_ENABLE) && !defined(SPLIT_OLED_ENABLE) && defined(CUSTOM_OLED_DRIVER)
 extern bool is_oled_enabled;
 #endif
-#if defined(POINTING_DEVICE_ENABLE) && defined(KEYBOARD_handwired_tractyl_manuform)
+#if defined(POINTING_DEVICE_ENABLE)
 extern bool tap_toggling;
 #endif
 #ifdef SWAP_HANDS_ENABLE
