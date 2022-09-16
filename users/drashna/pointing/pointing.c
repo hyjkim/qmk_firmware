@@ -28,12 +28,26 @@ __attribute__((weak)) report_mouse_t pointing_device_task_keymap(report_mouse_t 
     return mouse_report;
 }
 
+bool is_pointer_user(report_mouse_t* mouse_report) {
+    bool moves   = (mouse_report->x != 0 && mouse_report->y != 0) || mouse_report->h != 0 || mouse_report->v != 0;
+    bool toggles = false;
+
+#if defined(KEYBOARD_bastardkb_charybdis)
+    toggles = charybdis_get_pointer_sniping_enabled() || charybdis_get_pointer_dragscroll_enabled();
+#endif
+
+    return moves || toggles;
+}
+
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
     mouse_xy_report_t x = mouse_report.x, y = mouse_report.y;
+    bool              pointer_used = is_pointer_user(&mouse_report);
+
     mouse_report.x = 0;
     mouse_report.y = 0;
 
-    if (x != 0 && y != 0 && (timer_elapsed(mouse_debounce_timer) > TAP_CHECK)) {
+    if (pointer_used && (timer_elapsed(mouse_debounce_timer) > TAP_CHECK)) {
+        mouse_timer = timer_read();
 #ifdef OLED_ENABLE
         oled_timer_reset();
 #endif
@@ -50,11 +64,46 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
 
 bool process_record_pointing(uint16_t keycode, keyrecord_t* record) {
     switch (keycode) {
+        case TT(_MOUSE):
+            if (record->event.pressed) {
+                mouse_keycode_tracker++;
+            } else {
+#if TAPPING_TOGGLE != 0
+                if (record->tap.count == TAPPING_TOGGLE) {
+                    tap_toggling ^= 1;
+#    if TAPPING_TOGGLE == 1
+                    if (!tap_toggling) mouse_keycode_tracker -= record->tap.count + 1;
+#    else
+                    if (!tap_toggling) mouse_keycode_tracker -= record->tap.count;
+#    endif
+                } else {
+                    mouse_keycode_tracker--;
+                }
+#endif
+            }
+            mouse_timer = timer_read();
+            break;
+        case TG(_MOUSE):
+            if (record->event.pressed) {
+                tap_toggling ^= 1;
+            }
+            break;
+        case MO(_MOUSE):
+#if defined(KEYBOARD_ploopy)
+        case DPI_CONFIG:
+#elif (defined(KEYBOARD_bastardkb_charybdis) || defined(KEYBOARD_handwired_tractyl_manuform)) && !defined(NO_CHARYBDIS_KEYCODES)
+        case SAFE_RANGE ...(CHARYBDIS_SAFE_RANGE - 1):
+#endif
+        case KC_MS_UP ... KC_MS_WH_RIGHT:
+            record->event.pressed ? mouse_keycode_tracker++ : mouse_keycode_tracker--;
+            mouse_timer = timer_read();
+            break;
+>>>>>>> 781df43890 (keymap changes, keep mouse layer when scrolled)
         case KC_ACCEL:
             enable_acceleration = record->event.pressed;
             break;
         default:
-            mouse_debounce_timer  = timer_read();
+            mouse_debounce_timer = timer_read();
             break;
     }
     return true;
@@ -70,9 +119,10 @@ layer_state_t layer_state_set_pointing(layer_state_t state) {
     return state;
 }
 
-
 #if defined(POINTING_DEVICE_AUTO_MOUSE_ENABLE)
-__attribute__((weak)) bool is_mouse_record_keymap(uint16_t keycode, keyrecord_t *record) { return false; }
+__attribute__((weak)) bool is_mouse_record_keymap(uint16_t keycode, keyrecord_t* record) {
+    return false;
+}
 
 bool is_mouse_record_user(uint16_t keycode, keyrecord_t* record) {
     if (is_mouse_record_keymap(keycode, record)) {
