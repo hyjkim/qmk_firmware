@@ -28,7 +28,7 @@ __attribute__((weak)) report_mouse_t pointing_device_task_keymap(report_mouse_t 
     return mouse_report;
 }
 
-bool is_pointer_user(report_mouse_t* mouse_report) {
+bool is_pointer_used(report_mouse_t* mouse_report) {
     bool moves   = (mouse_report->x != 0 && mouse_report->y != 0) || mouse_report->h != 0 || mouse_report->v != 0;
     bool toggles = false;
 
@@ -41,7 +41,7 @@ bool is_pointer_user(report_mouse_t* mouse_report) {
 
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
     mouse_xy_report_t x = mouse_report.x, y = mouse_report.y;
-    bool              pointer_used = is_pointer_user(&mouse_report);
+    bool              pointer_used = is_pointer_used(&mouse_report);
 
     mouse_report.x = 0;
     mouse_report.y = 0;
