@@ -40,14 +40,12 @@ bool is_pointer_used(report_mouse_t* mouse_report) {
 }
 
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
+    bool              used = is_pointer_used(&mouse_report);
     mouse_xy_report_t x = mouse_report.x, y = mouse_report.y;
-    bool              pointer_used = is_pointer_used(&mouse_report);
-
     mouse_report.x = 0;
     mouse_report.y = 0;
 
-    if (pointer_used && (timer_elapsed(mouse_debounce_timer) > TAP_CHECK)) {
-        mouse_timer = timer_read();
+    if (used && (timer_elapsed(mouse_debounce_timer) > TAP_CHECK)) {
 #ifdef OLED_ENABLE
         oled_timer_reset();
 #endif
@@ -64,41 +62,6 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
 
 bool process_record_pointing(uint16_t keycode, keyrecord_t* record) {
     switch (keycode) {
-        case TT(_MOUSE):
-            if (record->event.pressed) {
-                mouse_keycode_tracker++;
-            } else {
-#if TAPPING_TOGGLE != 0
-                if (record->tap.count == TAPPING_TOGGLE) {
-                    tap_toggling ^= 1;
-#    if TAPPING_TOGGLE == 1
-                    if (!tap_toggling) mouse_keycode_tracker -= record->tap.count + 1;
-#    else
-                    if (!tap_toggling) mouse_keycode_tracker -= record->tap.count;
-#    endif
-                } else {
-                    mouse_keycode_tracker--;
-                }
-#endif
-            }
-            mouse_timer = timer_read();
-            break;
-        case TG(_MOUSE):
-            if (record->event.pressed) {
-                tap_toggling ^= 1;
-            }
-            break;
-        case MO(_MOUSE):
-#if defined(KEYBOARD_ploopy)
-        case DPI_CONFIG:
-#elif (defined(KEYBOARD_bastardkb_charybdis) || defined(KEYBOARD_handwired_tractyl_manuform)) && !defined(NO_CHARYBDIS_KEYCODES)
-        case SAFE_RANGE ...(CHARYBDIS_SAFE_RANGE - 1):
-#endif
-        case KC_MS_UP ... KC_MS_WH_RIGHT:
-            record->event.pressed ? mouse_keycode_tracker++ : mouse_keycode_tracker--;
-            mouse_timer = timer_read();
-            break;
->>>>>>> 781df43890 (keymap changes, keep mouse layer when scrolled)
         case KC_ACCEL:
             enable_acceleration = record->event.pressed;
             break;
